@@ -1,10 +1,11 @@
 <?php
+error_reporting(0);
 set_time_limit(0);
 require_once('color.php');
 
 function friendlist($token){
-	$a = json_decode(file_get_contents('https://graph.facebook.com/me/friends?access_token='.$token), true);
-	return $a['data'];
+	$a = file_get_contents('https://graph.facebook.com/me/friends?access_token='.$token);
+	return $a;
 }
 function last_active($id, $tok){
 	$a = json_decode(file_get_contents('https://graph.facebook.com/'.$id.'/feed?access_token='.$tok.'&limit=1'), true);
@@ -16,11 +17,11 @@ function last_active($id, $tok){
 function unfriend($id, $token){
 	$url = 'https://graph.facebook.com/me/friends?uid='.$id.'&access_token='.$token;
 	$ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $result = curl_exec($ch);
-    curl_close($ch);
+  $result = curl_exec($ch);
+  curl_close($ch);
 	if($result == true){
 		$unf = Console::green('[UNFRIENDED]');
 	} else {
@@ -39,16 +40,22 @@ echo "Year : ";
 $year = trim(fgets(STDIN));
 echo "\n";
 
-$FL = friendlist($fbtoken);
+$FL = json_decode(friendlist($fbtoken),true)['data'];
+$jumlah = count($FL);
+$sukses=0;
+$hitung=0;
 foreach($FL as $list){
+	$hitung = $hitung+1;
 	$name = $list['name'];
 	$id = $list['id'];
 	$date = last_active($id, $fbtoken);
 	if($date < $year){
-		echo Console::red('[INACTIVE]').' '.$name.' ~ '.$date.' '.unfriend($id, $fbtoken);
-		echo "\r\n";
+		$sukses++;
+		$result = Console::red('[INACTIVE]').' '.$name.' ~ '.$date.' '.unfriend($id, $fbtoken)."\r\n";
 	}else{
-		echo Console::green('[ACTIVE]').' '.$name.' ~ '.$date;
-		echo "\r\n";
+		$result = Console::green('[ACTIVE]').' '.$name.' ~ '.$date."\r\n";
 	}
+	echo "[$hitung/$jumlah] $result";
 }
+
+echo PHP_EOL."Successfully removed: ".$sukses;
